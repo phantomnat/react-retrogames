@@ -1,11 +1,18 @@
 import React, { Component } from 'react'
+
+import { connect } from 'react-redux'
+
+import { bindActionCreators } from 'redux'
+import Immutable from 'immutable'
 import { Modal, GamesListManager } from '../components'
+
+import * as gamesActionCreators from '../actions/games'
 
 class GamesContainer extends Component {
   constructor(props) {
     super(props)
 
-    this.state = { games: [], selectedGame: {}, searchBar: '' }
+    // this.state = { selectedGame: {} }
 
     this.toggleModal = this.toggleModal.bind(this)
     this.deleteGame = this.deleteGame.bind(this)
@@ -17,18 +24,22 @@ class GamesContainer extends Component {
   }
 
   toggleModal(index) {
-    this.setState({ selectedGame: this.state.games[index] })
+    // console.log(this.state.games[index])
+    this.props.gamesActions.showSelectedGame(this.props.games[index])
+    // this.setState({ selectedGame: this.state.games[index] })
     $('#game-modal').modal()
   }
 
   getGames() {
-    fetch('http://127.0.0.1:8080/games', {
-      headers: new Headers({
-        'Content-Type': 'application/json',
-      })
-    })
-      .then(response => response.json())
-      .then(data => this.setState({ games: data }))
+    this.props.gamesActions.getGames()
+
+    // fetch('http://127.0.0.1:8080/games', {
+    //   headers: new Headers({
+    //     'Content-Type': 'application/json',
+    //   })
+    // })
+    //   .then(response => response.json())
+    //   .then(data => this.setState({ games: data }))
   }
 
   deleteGame(id) {
@@ -46,11 +57,13 @@ class GamesContainer extends Component {
   }
 
   setSearchBar(event) {
-    this.setState({ searchBar: event.target.value.toLowerCase() })
+    this.props.gamesActions.setSearchBar(event.target.value.toLowerCase())
+    // this.setState({ searchBar: event.target.value.toLowerCase() })
   }
 
   render() {
-    const { games, selectedGame, searchBar } = this.state
+    const { games, searchBar, selectedGame } = this.props
+    console.log(games)
     return (
       <div>
         <Modal game={selectedGame} />
@@ -66,4 +79,18 @@ class GamesContainer extends Component {
   }
 }
 
-export default GamesContainer
+function mapStateToProps(state) {
+  return {
+    games: state.getIn(['games', 'list'], Immutable.List()).toJS(),
+    searchBar: state.getIn(['games', 'searchBar'], ''),
+    selectedGame: state.getIn(['games', 'selectedGame'], Immutable.List()).toJS(),
+  }
+}
+
+function mapDispatchToProps(dispatch) {
+  return {
+    gamesActions: bindActionCreators(gamesActionCreators, dispatch),
+  }
+}
+
+export default connect(mapStateToProps, mapDispatchToProps)(GamesContainer)
